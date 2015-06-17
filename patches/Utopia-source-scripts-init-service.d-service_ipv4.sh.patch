@@ -1,0 +1,46 @@
+--- ./Utopia/source/scripts/init/service.d/service_ipv4.sh
++++ ./Utopia/source/scripts/init/service.d/service_ipv4.sh	2015-04-22 14:22:31.194837009 -0600
+@@ -1,22 +1,5 @@
+ #!/bin/sh
+ 
+-#######################################################################
+-#   Copyright [2014] [Cisco Systems, Inc.]
+-# 
+-#   Licensed under the Apache License, Version 2.0 (the \"License\");
+-#   you may not use this file except in compliance with the License.
+-#   You may obtain a copy of the License at
+-# 
+-#       http://www.apache.org/licenses/LICENSE-2.0
+-# 
+-#   Unless required by applicable law or agreed to in writing, software
+-#   distributed under the License is distributed on an \"AS IS\" BASIS,
+-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-#   See the License for the specific language governing permissions and
+-#   limitations under the License.
+-#######################################################################
+-
+-
+ #------------------------------------------------------------------
+ # Copyright (c) 2009 by Cisco Systems, Inc. All Rights Reserved.
+ #
+@@ -241,8 +224,8 @@
+         LAN_IFNAME=$IFNAME
+ 
+         if [ x$SYSEVT_lan_ipaddr_v6_prev != x$SYSEVT_lan_ipaddr_v6 ]; then
+-            ip -6 addr del $SYSEVT_lan_ipaddr_v6_prev/$SYSEVT_lan_prefix_v6 dev $LAN_IFNAME valid_lft forever preferred_lft forever
+-            ip -6 addr add $SYSEVT_lan_ipaddr_v6/$SYSEVT_lan_prefix_v6 dev $LAN_IFNAME valid_lft forever preferred_lft forever
++            ip -6 addr del $SYSEVT_lan_ipaddr_v6_prev/64 dev $LAN_IFNAME valid_lft forever preferred_lft forever
++            ip -6 addr add $SYSEVT_lan_ipaddr_v6/64 dev $LAN_IFNAME valid_lft forever preferred_lft forever
+         fi
+     fi
+ 
+@@ -303,9 +286,6 @@
+     sysevent set ${SERVICE_NAME}_${1}-ipv4_static
+     sysevent set ${SERVICE_NAME}_${1}-status down
+ 
+-    if [ x"started" = x`sysevent get lan-status` ]; then
+-        sysevent set lan-status stopped
+-    fi
+ }
+ 
+ #args: 

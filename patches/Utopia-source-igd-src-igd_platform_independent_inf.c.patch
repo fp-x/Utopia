@@ -1,0 +1,22 @@
+--- ./Utopia/source/igd/src/igd_platform_independent_inf.c
++++ ./Utopia/source/igd/src/igd_platform_independent_inf.c	2015-04-22 14:22:31.194837009 -0600
+@@ -126,8 +126,9 @@
+ CHAR* IGD_pii_get_serial_number(VOID)
+ {
+     static char prodSn[128] = {'\0'};
++    /* TODO: to be implemented by OEM
+     ProductionDb_RetrieveAccess();
+-    ProdDb_GetSerialNumber(prodSn);
++    ProdDb_GetSerialNumber(prodSn);*/
+     return prodSn;
+ 	//return "123456789001";
+ }
+@@ -850,7 +851,7 @@
+                  * if for different internal client, return error
+                  */
+                 PAL_LOG("igd_platform", "debug", "%s: entry exists for different internal client (error)", __FUNCTION__);
+-                rc = ERROR_CONFLICT_FOR_MAPPING_ENTRY;
++                rc = 1;
+             }
+         } else {
+             /*
