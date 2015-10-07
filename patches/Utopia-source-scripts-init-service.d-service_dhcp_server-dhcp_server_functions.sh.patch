@@ -1,0 +1,307 @@
+--- ./Utopia/source/scripts/init/service.d/service_dhcp_server/dhcp_server_functions.sh
++++ ./Utopia/source/scripts/init/service.d/service_dhcp_server/dhcp_server_functions.sh	2015-06-15 07:21:49.136339225 -0600
+@@ -1,19 +1,3 @@
+-#######################################################################
+-#   Copyright [2014] [Cisco Systems, Inc.]
+-# 
+-#   Licensed under the Apache License, Version 2.0 (the \"License\");
+-#   you may not use this file except in compliance with the License.
+-#   You may obtain a copy of the License at
+-# 
+-#       http://www.apache.org/licenses/LICENSE-2.0
+-# 
+-#   Unless required by applicable law or agreed to in writing, software
+-#   distributed under the License is distributed on an \"AS IS\" BASIS,
+-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-#   See the License for the specific language governing permissions and
+-#   limitations under the License.
+-#######################################################################
+-
+ #------------------------------------------------------------------
+ # Copyright (c) 2008 by Cisco Systems, Inc. All Rights Reserved.
+ #
+@@ -28,12 +12,24 @@
+ 
+ DHCP_CONF=/etc/dnsmasq.conf
+ DHCP_STATIC_HOSTS_FILE=/etc/dhcp_static_hosts
+-DHCP_OPTIONS_FILE=/etc/dhcp_options
++DHCP_OPTIONS_FILE=/var/dhcp_options
+ LOCAL_DHCP_CONF=/tmp/dnsmasq.conf$$
+ LOCAL_DHCP_STATIC_HOSTS_FILE=/tmp/dhcp_static_hosts$$
+ LOCAL_DHCP_OPTIONS_FILE=/tmp/dhcp_options$$
+ RESOLV_CONF=/etc/resolv.conf
+ 
++# Variables needed for captive portal mode : start
++DEFAULT_RESOLV_CONF="/var/default/resolv.conf"
++DEFAULT_CONF_DIR="/var/default"
++XCONF_FILE=/etc/Xconf
++STATIC_URLS="/etc/static_urls"
++XCONF_DOWNLOAD_URL="/tmp/xconfdownloadurl"
++XCONF_DEFAULT_URL="https://xconf.xcal.tv/xconf/swu/stb/"
++XFINITY_DEFAULT_URL="http://xfinity.com"
++SPEEDTEST_DEFAULT_URL="http://speedtest.comcast.net"
++XFINITY_RED_DEFAULT_URL="http://my.xfinity.com"
++# Variables needed for captive portal mode : end
++
+ DHCP_SLOW_START_1_FILE=/etc/cron/cron.everyminute/dhcp_slow_start.sh
+ DHCP_SLOW_START_2_FILE=/etc/cron/cron.every5minute/dhcp_slow_start.sh
+ DHCP_SLOW_START_3_FILE=/etc/cron/cron.every10minute/dhcp_slow_start.sh
+@@ -337,6 +333,162 @@
+ 
+ }
+ 
++# A generic function which can be used for any URL parsing
++removehttp()
++{
++	urlToCheck=$1
++	haveHttp=`echo $urlToCheck | grep //`
++	if [ "$haveHttp" != "" ]
++	then
++		url=`echo $urlToCheck | cut -f2 -d":" | cut -f3 -d"/"`
++		echo $url
++	else
++		echo $urlToCheck
++	fi
++		
++}
++
++# This function will whitelist URLs that are needed during cpative portal mode
++prepare_whitelist_urls()
++{
++
++	ACS_URL=""
++	Cloud_URL=""
++	XCONF_URL=""
++	XCONF_DYN_URL=""
++	XFINITY_URL=""
++	SPEEDTEST_URL=""
++	isIPv4=""
++	isIPv6=""
++	nServer4=""
++	nServer6=""
++	if [ -e "/nvram/reverted" ]
++	then
++		echo "Removing reverted flag"
++		rm -f /nvram/reverted
++	fi	
++	# ACS URL can be get from DML
++	ACS_URL=`dmcli eRT getv Device.ManagementServer.URL | grep string, | awk '{print $5}'`
++	if [ "$ACS_URL" != "" ]
++	then
++		ACS_URL=`removehttp $ACS_URL`
++	fi
++
++	# Cloud URL can be get from DML
++	Cloud_URL=`dmcli eRT getv Device.DeviceInfo.X_RDKCENTRAL-COM_CloudUIWebURL | grep string, | awk '{print $5}'`
++	if [ "$Cloud_URL" != "" ]
++	then
++		Cloud_URL=`removehttp $Cloud_URL`
++	fi
++
++	# 
++	# Get all Static URLs
++	# 1. Xfinity.com
++	# 2. Speedtest URL
++	#
++	if [ -e $STATIC_URLS ]
++	then
++		# Get Xconf URL from static file
++		XFINITY_RED=`cat $STATIC_URLS | grep xfinity_2 | cut -d"=" -f 2`
++		if [ $XFINITY_RED = "" ]
++		then
++			# Fall back to default, if entry is not present in the file
++			XFINITY_RED=$XFINITY_RED
++		fi
++
++		# Get Xfinity URL from static file
++		XFINITY_URL=`cat $STATIC_URLS | grep xfinity | cut -d"=" -f 2`
++		if [ "$XFINITY_URL" = "" ]
++		then
++			XFINITY_URL=$XFINITY_DEFAULT_URL
++		fi
++
++		# Get speedtest URL from static file
++		SPEEDTEST_URL=`cat $STATIC_URLS | grep speed | cut -d"=" -f 2`
++		if [ "$SPEEDTEST_URL" = "" ]
++		then
++			SPEEDTEST_URL=$SPEEDTEST_DEFAULT_URL
++		fi
++	else
++		# If static file is not present, use the default hardcoded values as a fallback mechanism
++		XFINITY_RED=$XFINITY_RED_DEFAULT_URL
++		XFINITY_URL=$XFINITY_DEFAULT_URL
++		SPEEDTEST_URL=$SPEEDTEST_DEFAULT_URL
++	fi
++
++	
++	
++	#
++	# No need to do sanity as we should be having a value assigned at this point
++	# Let's remove http:// or https:// from the URLs
++	#
++	XFINITY_RED=`removehttp $XFINITY_RED`
++	XFINITY_URL=`removehttp $XFINITY_URL`
++	SPEEDTEST_URL=`removehttp $SPEEDTEST_URL`
++
++	if [ -e $XCONF_FILE ]
++	then
++		XCONF_URL=`cat $XCONF_FILE | grep URL | cut -d"=" -f 2`	
++		if [ "$XCONF_URL" = "" ]
++		then
++			XCONF_URL=$XCONF_DEFAULT_URL
++		fi
++	else
++		XCONF_URL=$XCONF_DEFAULT_URL
++	fi
++	XCONF_URL=`removehttp $XCONF_URL`
++
++	# Check if XCONF dynamic URL is already available.	
++	if [ -e $XCONF_DOWNLOAD_URL ]
++	then
++		XCONF_DYN_URL=`cat $XCONF_DOWNLOAD_URL`
++		if [ "$XCONF_DYN_URL" != "" ]
++		then
++			XCONF_DYN_URL=`removehttp $XCONF_DYN_URL`
++		fi
++	fi
++	
++	#Check in what mode erouter0 is in : ipv4/ipv6
++	isIPv4=`ifconfig erouter0 | grep inet | grep -v inet6`
++	if [ "$isIPv4" = "" ]
++	then
++		isIPv6=`ifconfig erouter0 | grep inet6`
++		if [ "$isIPv6" != "" ]
++		then
++			nServer6=`cat $RESOLV_CONF | grep nameserver | grep ":" | head -1 | cut -d" " -f2`
++		fi
++	else	
++			nServer4=`cat $RESOLV_CONF | grep nameserver | grep "\." | head -1 | cut -d" " -f2`
++	fi
++	
++	#TODO: ipv6 DNS whitelisting in case of ipv6 only clients
++	
++	# Whitelist all server IPs with IPv4 DNS servers.
++	if [ "$nServer4" != "" ]
++	then
++		if [ "$ACS_URL" != "" ]; then
++			echo "server=/$ACS_URL/$nServer4" >> $1
++		fi
++		if [ "$XCONF_URL" != "" ]; then
++			echo "server=/$XCONF_URL/$nServer4" >> $1
++		fi
++		if [ "$Cloud_URL" != "" ]; then
++			echo "server=/$Cloud_URL/$nServer4" >> $1
++		fi
++		if [ "$XCONF_DYN_URL" != "" ]; then
++			echo "server=/$XCONF_DYN_URL/$nServer4" >> $1
++		fi
++		if [ "$XFINITY_URL" != "" ];then
++			echo "server=/$XFINITY_URL/$nServer4" >> $1
++		fi
++		if [ "$XFINITY_RED" != "" ];then
++			echo "server=/$XFINITY_RED/$nServer4" >> $1
++		fi
++		if [ "$SPEEDTEST_URL" != "" ]; then
++			echo "server=/$SPEEDTEST_URL/$nServer4" >> $1
++		fi
++	fi
++}
+ 
+ #-----------------------------------------------------------------
+ # set the dhcp config file which is also the dns forwarders file
+@@ -358,9 +510,65 @@
+    calculate_dhcp_range $1 $2
+ 
+    echo -n > $LOCAL_DHCP_CONF
++
++
++   CAPTIVE_PORTAL_MODE="false"
++   CONFIGFILEAVAIL=`find /var/tmp -name *walledgarden*`
++
++	SSID1_DEF=`cat /nvram/bbhm_cur_cfg.xml | grep Device.WiFi.Radio.SSID.1.SSID | cut -d">" -f 2 | cut -d "<" -f 1`
++	SSID2_DEF=`cat /nvram/bbhm_cur_cfg.xml | grep Device.WiFi.Radio.SSID.2.SSID | cut -d">" -f 2 | cut -d "<" -f 1`
++
++	PASSPHRASE1_DEF=`cat /nvram/bbhm_cur_cfg.xml | grep Device.WiFi.Radio.SSID.1.Passphrase | cut -d">" -f 2 | cut -d "<" -f 1`
++	PASSPHRASE2_DEF=`cat /nvram/bbhm_cur_cfg.xml | grep Device.WiFi.Radio.SSID.2.Passphrase | cut -d">" -f 2 | cut -d "<" -f 1`
++
++	SSID1_CUR=`dmcli eRT getv Device.WiFi.SSID.1.SSID | grep string, | awk '{print $5}'`
++	SSID2_CUR=`dmcli eRT getv Device.WiFi.SSID.2.SSID | grep string, | awk '{print $5}'`
++
++	PASSPHRASE1_CUR=`dmcli eRT getv Device.WiFi.AccessPoint.1.Security.X_CISCO_COM_KeyPassphrase | grep string, | awk '{print $5}'`
++	PASSPHRASE2_CUR=`dmcli eRT getv Device.WiFi.AccessPoint.2.Security.X_CISCO_COM_KeyPassphrase | grep string, | awk '{print $5}'`
++
++    
++   # If redirection flag is "true" that means we are in factory default condition
++   REDIRECTION_ON=`syscfg get redirection_flag`
++   if [ "$CONFIGFILEAVAIL" = "" ] && [ "$REDIRECTION_ON" = "true" ]
++   then
++	
++	CAPTIVE_PORTAL_MODE="true"
++	if [ "$SSID1_DEF" = "$SSID1_CUR" ] ||  [ "$SSID2_DEF" = "$SSID2_CUR" ] 
++	then
++	        CAPTIVE_PORTAL_MODE="true"
++	elif [ "$PASSPHRASE1_DEF" = "$PASSPHRASE1_CUR" ] || [ "$PASSPHRASE2_DEF" = "$PASSPHRASE2_CUR" ]
++	then
++      		CAPTIVE_PORTAL_MODE="true"
++	else
++		echo "WiFi SSID and Passphrase are already modified"
++	fi	
++   fi
++
++  
+    echo "domain-needed" >> $LOCAL_DHCP_CONF
+    echo "bogus-priv" >> $LOCAL_DHCP_CONF
++
++   if [ "$CAPTIVE_PORTAL_MODE" = "true" ]
++   then
++	# Create a temporary resolv configuration file
++	# Pass that as an option in DNSMASQ
++	if [ ! -d $DEFAULT_CONF_DIR ]
++	then
++		mkdir $DEFAULT_CONF_DIR
++	fi
++	touch $DEFAULT_RESOLV_CONF
++	echo "nameserver 127.0.0.1" > $DEFAULT_RESOLV_CONF
++	echo "resolv-file=$DEFAULT_RESOLV_CONF" >> $LOCAL_DHCP_CONF
++	#echo "address=/#/$addr" >> $DHCP_CONF
++   else
++	if [ -e $DEFAULT_RESOLV_CONF ]
++	then
++		rm -f $DEFAULT_RESOLV_CONF
++	fi
+    echo "resolv-file=$RESOLV_CONF" >> $LOCAL_DHCP_CONF
++   fi
++
+    echo "interface=$LAN_IFNAME" >> $LOCAL_DHCP_CONF
+    echo "expand-hosts" >> $LOCAL_DHCP_CONF
+ 
+@@ -388,7 +596,13 @@
+    echo "$PREFIX""dhcp-script=$DHCP_ACTION_SCRIPT" >> $LOCAL_DHCP_CONF
+    echo "$PREFIX""dhcp-lease-max=$DHCP_NUM" >> $LOCAL_DHCP_CONF
+    echo "$PREFIX""dhcp-hostsfile=$DHCP_STATIC_HOSTS_FILE" >> $LOCAL_DHCP_CONF
++
++   if [ "$CAPTIVE_PORTAL_MODE" = "false" ]
++   then
+    echo "$PREFIX""dhcp-optsfile=$DHCP_OPTIONS_FILE" >> $LOCAL_DHCP_CONF
++   fi
++
++
+    if [ "$LOG_LEVEL" -gt 1 ] ; then
+       echo "$PREFIX""log-dhcp" >> $LOCAL_DHCP_CONF
+    fi
+@@ -441,7 +655,14 @@
+    fi
+    
+    do_extra_pools
+-   
++   if [ "$CAPTIVE_PORTAL_MODE" = "true" ]
++   then
++        # In factory default condition, prepare whitelisting and redirection IP
++	addr=`syscfg get lan_ipaddr`
++	echo "address=/#/$addr" >> $LOCAL_DHCP_CONF
++        prepare_whitelist_urls $LOCAL_DHCP_CONF
++	sysevent set captiveportaldhcp completed
++   fi
+    cat $LOCAL_DHCP_CONF > $DHCP_CONF
+    rm -f $LOCAL_DHCP_CONF
+ }

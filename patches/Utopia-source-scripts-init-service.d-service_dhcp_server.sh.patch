@@ -1,0 +1,61 @@
+--- ./Utopia/source/scripts/init/service.d/service_dhcp_server.sh
++++ ./Utopia/source/scripts/init/service.d/service_dhcp_server.sh	2015-06-15 07:21:49.136339225 -0600
+@@ -1,22 +1,5 @@
+ #!/bin/sh
+ 
+-#######################################################################
+-#   Copyright [2014] [Cisco Systems, Inc.]
+-# 
+-#   Licensed under the Apache License, Version 2.0 (the \"License\");
+-#   you may not use this file except in compliance with the License.
+-#   You may obtain a copy of the License at
+-# 
+-#       http://www.apache.org/licenses/LICENSE-2.0
+-# 
+-#   Unless required by applicable law or agreed to in writing, software
+-#   distributed under the License is distributed on an \"AS IS\" BASIS,
+-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-#   See the License for the specific language governing permissions and
+-#   limitations under the License.
+-#######################################################################
+-
+-
+ #------------------------------------------------------------------
+ # Copyright (c) 2008,2010 by Cisco Systems, Inc. All Rights Reserved.
+ #
+@@ -49,13 +32,16 @@
+ 
+ SERVICE_NAME="dhcp_server"
+ 
+-DHCP_CONF=/etc/dnsmasq.conf
++#DHCP_CONF=/etc/dnsmasq.conf
++DHCP_CONF=/var/dnsmasq.conf
+ BIN=dnsmasq
+ SERVER=${BIN}
+ PMON=/etc/utopia/service.d/pmon.sh
+ PID_FILE=/var/run/dnsmasq.pid
+ PID=$$
+ 
++XCONF_FILE="/etc/Xconf"
++XCONF_DEFAULT_URL="https://xconf.xcal.tv/xconf/swu/stb/"
+ 
+ CURRENT_LAN_STATE=`sysevent get lan-status`
+ 
+@@ -343,7 +329,9 @@
+    # the only dhcp server on the local network. This allows
+    # the dns server to give out a _requested_ lease even if
+    # that lease is not found in the dnsmasq.leases file
++
+    $SERVER -u nobody --dhcp-authoritative -P 4096 -C $DHCP_CONF --enable-dbus
++
+    $PMON setproc dhcp_server $BIN $PID_FILE "/etc/utopia/service.d/service_dhcp_server.sh dhcp_server-restart" 
+    sysevent set dns-status started
+    sysevent set dhcp_server-status started
+@@ -367,7 +355,6 @@
+           echo "lan_not_restart found! Don't restart lan!"
+         fi
+      fi
+-
+ }
+ 
+ #-----------------------------------------------------------------
