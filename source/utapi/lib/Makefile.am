@@ -14,4 +14,4 @@ libutapi_la_SOURCES = utapi_tr_wlan.c utapi.c utapi_util.c tr181_util.c utapi_pa
 libutapi_la_LDFLAGS = 
 
 libutapi_ladir = $(top_srcdir)/source/include/utapi
-libutapi_la_HEADERS = utapi_wlan.h
+libutapi_la_HEADERS = utapi_util.h utapi_wlan.h utapi_tr_dhcp.h utapi_tr_user.h utapi_tr_wlan.h
