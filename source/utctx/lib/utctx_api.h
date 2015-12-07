@@ -47,7 +47,7 @@
 #ifndef __UTCTX_API_H__
 #define __UTCTX_API_H__
 
-#include "autoconf.h"
+/*#include "autoconf.h"*/
 #include "utctx.h"
 
 /* Utopia defines  */
