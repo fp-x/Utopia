@@ -1,4 +1,22 @@
 #!/bin/sh
+##########################################################################
+# If not stated otherwise in this file or this component's Licenses.txt
+# file the following copyright and licenses apply:
+#
+# Copyright 2015 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##########################################################################
 
 #######################################################################
 #   Copyright [2014] [Cisco Systems, Inc.]
@@ -41,7 +59,8 @@ ccsp_bus_client_tool eRT setv Device.Bridging.Bridge.4.Port.2.X_CISCO_COM_Mode s
 ccsp_bus_client_tool eRT setv Device.Bridging.Bridge.4.Enable bool true
 
 #Reload PSM defaults
-psmcli set dmsb.hotspot.gre.1.ReconnPrimary 43200
-psmcli set dmsb.hotspot.gre.1.KeepAlive.Interval 60
-psmcli set dmsb.hotspot.gre.1.KeepAlive.Threshold 3
-psmcli set dmsb.hotspot.gre.1.KeepAlive.FailInterval 2000
+psmcli set dmsb.hotspot.tunnel.1.ReconnectToPrimaryRemoteEndpoint 43200
+psmcli set dmsb.hotspot.tunnel.1.RemoteEndpointHealthCheckPingInterval 60
+psmcli set dmsb.hotspot.tunnel.1.RemoteEndpointHealthCheckPingFailThreshold 3
+#zqiu: default should be  300 sec
+psmcli set dmsb.hotspot.tunnel.1.RemoteEndpointHealthCheckPingIntervalInFailure 300

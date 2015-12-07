@@ -1,4 +1,22 @@
 #!/bin/sh
+##########################################################################
+# If not stated otherwise in this file or this component's Licenses.txt
+# file the following copyright and licenses apply:
+#
+# Copyright 2015 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##########################################################################
 
 #######################################################################
 #   Copyright [2014] [Cisco Systems, Inc.]
@@ -37,6 +55,7 @@
 #source /etc/utopia/service.d/brcm_ethernet_helper.sh
 
 source /etc/utopia/service.d/ut_plat.sh
+source /etc/utopia/service.d/log_capture_path.sh
 
 THIS=/etc/utopia/service.d/lan_handler.sh
 SERVICE_NAME="lan_handler"
@@ -88,9 +107,10 @@ ap_addr() {
 # ENTRY
 #------------------------------------------------------------------
 
-#service_init 
 
-echo "lan_handler called with $1 $2" > /dev/console
+#service_init 
+echo "RDKB_SYSTEM_BOOT_UP_LOG : lan_handler called with $1 $2"
+#echo "lan_handler called with $1 $2" > /dev/console
 
 case "$1" in
    ${SERVICE_NAME}-start)
@@ -122,14 +142,17 @@ case "$1" in
         if [ x"up" = x${2} ]; then
             INST=${1#*_}
             INST=${INST%-*}
-			RG_MODE=`syscfg get last_erouter_mode`
+            RG_MODE=`syscfg get last_erouter_mode`
             sysevent set current_lan_ipaddr `sysevent get ipv4_${INST}-ipv4addr`
 
-			if [ "$RG_MODE" = "2" -a x"ready" != x`sysevent get start-misc` ]; then
-				firewall
-				execute_dir /etc/utopia/post.d/
+            if [ "$RG_MODE" = "2" -a x"ready" != x`sysevent get start-misc` ]; then
+				echo "LAN HANDLER : Triggering DHCP server using LAN status based on RG_MODE:2"
+                sysevent set lan-status started
+                firewall
+                execute_dir /etc/utopia/post.d/
             elif [ x"ready" != x`sysevent get start-misc` -a x != x`sysevent get current_wan_ipaddr` -a "0.0.0.0" != `sysevent get current_wan_ipaddr` ]; then
-
+				echo "LAN HANDLER : Triggering DHCP server using LAN status based on start misc"
+				sysevent set lan-status started
                 STARTED_FLG=`sysevent get parcon_nfq_status`
 
                 if [ x"$STARTED_FLG" != x"started" ]; then
@@ -138,15 +161,21 @@ case "$1" in
                     ((nfq_handler 6 $BRLAN0_MAC &)&)
                     sysevent set parcon_nfq_status started
                 fi
-				gw_lan_refresh&
-                firewall
-				execute_dir /etc/utopia/post.d/
+                isAvailablebrlan1=`ifconfig | grep brlan1`
+                if [ "$isAvailablebrlan1" != "" ]
+                then
+                    echo "LAN HANDLER : Refreshing LAN from handler"
+                    gw_lan_refresh&
+                fi
+               	firewall
+                execute_dir /etc/utopia/post.d/
             else
+				echo "LAN HANDLER : Triggering DHCP server using LAN status"
+                sysevent set lan-status started
                 sysevent set firewall-restart
             fi
 
             #sysevent set desired_moca_link_state up
-            sysevent set lan-status started
             
             firewall_nfq_handler.sh &             
 
@@ -171,9 +200,12 @@ case "$1" in
 
             #disable dnsmasq when ipv6 only mode and DSlite is disabled
             DSLITE_ENABLED=`sysevent get dslite_enabled`
+	    	DHCP_PROGRESS=`sysevent get dhcp_server-progress`
+			echo "LAN HANDLER : DHCP configuration status got is : $DHCP_PROGRESS"
             if [ "2" = "$SYSCFG_last_erouter_mode" ] && [ "x1" != x$DSLITE_ENABLED ]; then
                 sysevent set dhcp_server-stop		    
-            elif [ "0" != "$SYSCFG_last_erouter_mode" ]; then
+            elif [ "0" != "$SYSCFG_last_erouter_mode" ] && [ "$DHCP_PROGRESS" != "inprogress" ] ; then
+				echo "LAN HANDLER : Triggering dhcp start based on last erouter mode"
                 sysevent set dhcp_server-start
             fi
 
@@ -205,7 +237,7 @@ case "$1" in
 
    ;;
    
-   snmp_subagent-status)
+   pnm-status)
         if [ x = x"`sysevent get lan_handler_async`" ]; then
             eval `psmcli get -e INST dmsb.MultiLAN.PrimaryLAN_l3net L2INST dmsb.MultiLAN.PrimaryLAN_l2net BRPORT dmsb.MultiLAN.PrimaryLAN_brport HSINST dmsb.MultiLAN.HomeSecurity_l3net`
             if [ x != x$INST ]; then 
@@ -240,8 +272,8 @@ case "$1" in
         LAN_IFNAME=`sysevent get ipv4_${LAN_INST}-ifname`
 
         if [ x$SYSEVT_lan_ipaddr_v6_prev != x$SYSEVT_lan_ipaddr_v6 ]; then
-            ip -6 addr del $SYSEVT_lan_ipaddr_v6_prev/$SYSEVT_lan_prefix_v6 dev $LAN_IFNAME valid_lft forever preferred_lft forever
-            ip -6 addr add $SYSEVT_lan_ipaddr_v6/$SYSEVT_lan_prefix_v6 dev $LAN_IFNAME valid_lft forever preferred_lft forever
+            ip -6 addr del $SYSEVT_lan_ipaddr_v6_prev/64 dev $LAN_IFNAME valid_lft forever preferred_lft forever
+            ip -6 addr add $SYSEVT_lan_ipaddr_v6/64 dev $LAN_IFNAME valid_lft forever preferred_lft forever
         fi
 
    ;;

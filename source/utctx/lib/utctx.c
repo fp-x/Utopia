@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's Licenses.txt file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2015 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
  
@@ -734,7 +753,7 @@ static struct
     { Utopia_Type_Config, Utopia_Event__NONE__,   Utopia_Static__NONE__, Utopia_For__NONE__, 1, "lan_clients_count", UtopiaValue__UNKNOWN__ }, /* UtopiaValue_USGv2_Lan_Clients_Count */
     { Utopia_Type_IndexedConfig, Utopia_Event__NONE__, Utopia_Static__NONE__, Utopia_Index_For_Key, 1, "lan_clients_%d", UtopiaValue__UNKNOWN__ },  /* UtopiaValue_USGv2_Lan_Clients */
     { Utopia_Type_NamedConfig, Utopia_Event__NONE__,   Utopia_Static__NONE__, Utopia_Name_For_Key, 1, "lan_clients_mac_%s", UtopiaValue__UNKNOWN__ }, /* UtopiaValue_USGv2_Lan_Clients_Mac */
-
+    { Utopia_Type_Event, Utopia_Event__NONE__,           Utopia_Static__NONE__, Utopia_For__NONE__, 0, "pnm-status",    		UtopiaValue__UNKNOWN__ }, /* UtopiaValue_IPv6_Prefix */
     { Utopia_Type__UNKNOWN__, Utopia_Event__NONE__, Utopia_Static__NONE__, Utopia_For__NONE__, 0, 0, UtopiaValue__UNKNOWN__ }, /* UtopiaValue__LAST__ */
 };
 
@@ -1973,3 +1992,5 @@ void Utopia_Free(UtopiaContext* pUtopiaCtx, int fCommit)
         SysEvent_Close(pUtopiaCtx->iEventHandle, pUtopiaCtx->uiEventToken);
     }
 }
+
+

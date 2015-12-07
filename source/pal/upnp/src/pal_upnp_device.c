@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's Licenses.txt file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2015 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
  
@@ -444,19 +463,19 @@ LOCAL INT32 _handle_action_request(pal_upnp_action_request *ar_event)
  *  Return Values: INT32
  *      0 if successful else error code. More error code is TBD
  ************************************************************/  
-LOCAL INT32 upnp_event_handler(pal_upnp_etype EventType, VOID *event, VOID *Cookie)
+LOCAL INT32 upnp_event_handler(Upnp_EventType EventType, VOID *event, VOID *Cookie)
 {
 	switch (EventType) 
 	{
-	case PAL_UPNP_CONTROL_ACTION_REQUEST:
+	case UPNP_CONTROL_ACTION_REQUEST:
 		PAL_LOG(UDT_LNAME, PAL_LOG_LEVEL_INFO, "action request\n");
 		_handle_action_request(event);
 		break;
-	case PAL_UPNP_CONTROL_GET_VAR_REQUEST:
+	case UPNP_CONTROL_GET_VAR_REQUEST:
 		PAL_LOG(UDT_LNAME, PAL_LOG_LEVEL_INFO, "control get variable request\n");
         _handle_ControGetVar_request(event);
 		break;
-	case PAL_UPNP_EVENT_SUBSCRIPTION_REQUEST:
+	case UPNP_EVENT_SUBSCRIPTION_REQUEST:
 		PAL_LOG(UDT_LNAME, PAL_LOG_LEVEL_INFO, "event subscription request\n");
 		_handle_subscription_request(event);
 		break;

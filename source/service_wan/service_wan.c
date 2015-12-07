@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's Licenses.txt file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2015 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
  
@@ -36,8 +55,8 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include "sysevent.h"
-#include "syscfg.h"
+#include "sysevent/sysevent.h"
+#include "syscfg/syscfg.h"
 #include "util.h"
 
 #define PROG_NAME       "SERVICE-WAN"
@@ -162,8 +181,9 @@ static int dhcp_start(const char *ifname)
 static int route_config(const char *ifname)
 {
     if (vsystem("ip rule add iif %s lookup all_lans && "
-                "ip rule add oif %s lookup erouter",
-                ifname, ifname) != 0)
+                "ip rule add oif %s lookup erouter && "
+                "ip -6 rule add oif %s lookup erouter ",
+                ifname, ifname, ifname) != 0)
         return -1;
 
     return 0;
@@ -172,8 +192,9 @@ static int route_config(const char *ifname)
 static int route_deconfig(const char *ifname)
 {
     if (vsystem("ip rule del iif %s lookup all_lans && "
-                "ip rule del oif %s lookup erouter",
-                ifname, ifname) != 0)
+                "ip rule del oif %s lookup erouter && "
+                " ip -6 rule del oif %s lookup erouter ",
+                ifname, ifname, ifname) != 0)
         return -1;
 
     return 0;
@@ -219,6 +240,9 @@ static int wan_start(struct serv_wan *sw)
 
 done:
     sysevent_set(sw->sefd, sw->setok, "wan_service-status", "started", 0);
+    printf("Network Response script called to capture network response\n ");
+    /*Network Response captured ans stored in /var/tmp/network_response.txt*/
+    system("sh /etc/network_response.sh &");
     return 0;
 }
 
@@ -304,6 +328,8 @@ static int wan_iface_up(struct serv_wan *sw)
 
         sysctl_iface_set("/proc/sys/net/ipv6/conf/all/forwarding", NULL, "1");
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/forwarding", sw->ifname, "1");
+        sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/forwarding", "wan0", "0");
+        sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/forwarding", "mta0", "0");
         break;
     default:
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/autoconf", sw->ifname, "0");

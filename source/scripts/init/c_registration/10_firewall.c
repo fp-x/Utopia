@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's Licenses.txt file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2015 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
  
@@ -29,7 +48,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdio.h>
-#include "srvmgr/srvmgr.h"
+#include "srvmgr.h"
 
 #define SERVICE_NAME              "firewall"
 //#define SERVICE_DEFAULT_HANDLER   "/fss/gw/usr/sbin/firewall"
@@ -49,6 +68,8 @@ const char* SERVICE_CUSTOM_EVENTS[] = {
                                         "syslog_rotated|/etc/utopia/service.d/service_firewall/newhost_monitor.sh|NULL|"TUPLE_FLAG_EVENT,
                                         "ipv6_prefix|"SERVICE_DEFAULT_HANDLER,
                                         "current_wan_ipv6_interface|"SERVICE_DEFAULT_HANDLER,
+                                        "ipv6_wan0_dhcp_solicNodeAddr|"SERVICE_DEFAULT_HANDLER,
+                                        "ipv6_erouter0_dhcp_solicNodeAddr|"SERVICE_DEFAULT_HANDLER,
                                         NULL
                                       };
 
