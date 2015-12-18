@@ -68,6 +68,7 @@ PMON=/etc/utopia/service.d/pmon.sh
 PID_FILE=/var/run/dropbear.pid
 
 cosa_start() {
+   echo test > /var/ccsp-start-test
     COSA_APP_PATH="/usr/ccsp"
     COSA_APP="cosa_start.sh"
     
